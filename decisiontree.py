@@ -10,7 +10,7 @@ def entropy(P, N):
 
 
 
-def recursive_split(data, attributes, last_column, before_entropy, tree, key_list):
+def recursive_split(data, attributes, last_column, before_entropy, tree, key_list, full_path):
     
     gain = []
     before = set()
@@ -57,9 +57,9 @@ def recursive_split(data, attributes, last_column, before_entropy, tree, key_lis
         gain.append(round(information_gain,2))
     max_gain = max(gain)
     max_attribute = attributes[gain.index(max_gain)]
+    full_path.append(max_attribute)
     data_id = ' '
     sp = ' '
-    print("Attributes: " + str(attributes))
     print("Information Gain: " + str(gain))
     print("Highest Information Gain: " + max_attribute + " with " + str(max_gain))
     for ps in positive_subset:
@@ -71,17 +71,21 @@ def recursive_split(data, attributes, last_column, before_entropy, tree, key_lis
     before = list(before)
     oP = 0
     oN = 0
-
+    french = 1
     for b in before:
 
         P = 0
         N = 0
-        if b.find(max_attribute) != -1:
+        if b == "Type French":
+            tree[b] = (("Yes", b))
+            key_list.append(b)
+        elif b.find(max_attribute) != -1:
             for s in split_data[b]:
                 if s == "Yes":
                     P+=1
                 else:
                     N+=1
+
             if P >= N:
                 oP+=1
                 if b == sp:
@@ -93,33 +97,35 @@ def recursive_split(data, attributes, last_column, before_entropy, tree, key_lis
                 oN+=1
                 if b == sp:
                     tree[b] = (("node", "Yes", b))
+                    key_list.append(b)
                 else:
                     tree[b] = (("No", b))
-                key_list.append(b)
+                    key_list.append(b)
     new_entropy = before_entropy
-    if (oN / (oP + oN)) != 0.0 and (oP / (oP + oN)) != 0.0:
-        new_entropy = entropy(oP, oN)
+    if oN != 0 and oP != 0:
+        if (oN / (oP + oN)) != 0.0 and (oP / (oP + oN)) != 0.0:
+            new_entropy = entropy(oP, oN)
     else:
         new_entropy = 1.0
     newdata = []
     new_last_column = []
     it = 0
+    child_list = []
     for n in data:
         if data_id == n[gain.index(max_gain)]:
+            
             newdata.append(n)
             new_last_column.append(last_column[it])
         it+=1
-    
     counter = 0
 
     for d in newdata:
         d.pop(gain.index(max_gain))
     attributes.pop(gain.index(max_gain))
     print("---------------------------------------------")
-    print("\n\n")
     if new_last_column and attributes:
-        recursive_split(newdata, attributes,new_last_column,new_entropy, tree, key_list)
-    return tree, key_list
+        recursive_split(newdata, attributes,new_last_column,new_entropy, tree, key_list, full_path)
+    return tree, key_list, full_path
 
 def main(argv):
     print(argv[1])
@@ -136,32 +142,35 @@ def main(argv):
     before_entropy = 1
     tree = {}
     keys = []
-    recursive_split(data, attributes, last_column, before_entropy, tree, keys)
+    full_path = []
+    recursive_split(data, attributes, last_column, before_entropy, tree, keys, full_path)
     print("The Tree: \n\n")
     full_attr = ["Alternate", "Bar", "Fri/Sat", "Hungry", "Patrons", "Raining", "Reservation", "Type", "WaitEstimate"]
     path = []
-    for k in keys:
-        for f in full_attr:
-            if f.find(k.split()[0]) != -1 and f not in path:
-                path.append(f)
+    for fp in full_path:
+        for fa in full_attr:
+            if fa.find(fp) != -1:
+                path.append(fa)
+    exist = [] 
+    keys = set(keys)
     popcount = 0
     for p in path:
-        print("             " +p)
-        print("\n")
+        print("------Node---->   " +p)
         for k in keys:
             if p.find(k.split()[0]) != -1:
                 if tree[k][0] != "node":
                     print(tree[k][1],end="      ")
                 else:
                     print(str(tree[k][2]) + "(NODE)",end="          ")
-        print("\n\n")
+        print("\n")
         for k in keys:
             if p.find(k.split()[0]) != -1:
                 if tree[k][0] != "node":
                     print(tree[k][0],end="               ")
                 else:
                     print(tree[k][1],end="               ")
-        print("\n\n\n")
+
+        print("\n")
 
 
 
