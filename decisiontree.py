@@ -10,8 +10,7 @@ def entropy(P, N):
 
 
 
-def recursive_split(data, attributes, last_column, before_entropy, tree, key_list, full_path):
-    
+def recursive_split(data, attributes, last_column, before_entropy, tree, key_list, full_path, impure_set):
     gain = []
     before = set()
     positive_subset = []
@@ -89,17 +88,23 @@ def recursive_split(data, attributes, last_column, before_entropy, tree, key_lis
             if P >= N:
                 oP+=1
                 if b == sp:
-                    tree[b] = (("node", "Yes", b))
+                    tree[b] = (("node", "Yes", b, max_attribute))
                 else:
-                    tree[b] = (("Yes", b))
+                    tree[b] = (("Yes", b, max_attribute))
+                    t = False
+                    for x in impure_set:
+                        if max_attribute in x:
+                            t = True
+                    if not t:        
+                        impure_set.append((b, "Yes", max_attribute))
                 key_list.append(b)
             else:
                 oN+=1
                 if b == sp:
-                    tree[b] = (("node", "Yes", b))
+                    tree[b] = (("node", "Yes", b, max_attribute))
                     key_list.append(b)
                 else:
-                    tree[b] = (("No", b))
+                    tree[b] = (("No", b, max_attribute))
                     key_list.append(b)
     new_entropy = before_entropy
     if oN != 0 and oP != 0:
@@ -124,8 +129,8 @@ def recursive_split(data, attributes, last_column, before_entropy, tree, key_lis
     attributes.pop(gain.index(max_gain))
     print("---------------------------------------------")
     if new_last_column and attributes:
-        recursive_split(newdata, attributes,new_last_column,new_entropy, tree, key_list, full_path)
-    return tree, key_list, full_path
+        recursive_split(newdata, attributes,new_last_column,new_entropy, tree, key_list, full_path, impure_set)
+    return tree, key_list, full_path, impure_set
 
 def main(argv):
     print(argv[1])
@@ -143,7 +148,8 @@ def main(argv):
     tree = {}
     keys = []
     full_path = []
-    recursive_split(data, attributes, last_column, before_entropy, tree, keys, full_path)
+    impure_set = []
+    recursive_split(data, attributes, last_column, before_entropy, tree, keys, full_path, impure_set)
     print("The Tree: \n\n")
     full_attr = ["Alternate", "Bar", "Fri/Sat", "Hungry", "Patrons", "Raining", "Reservation", "Type", "WaitEstimate"]
     path = []
@@ -154,6 +160,7 @@ def main(argv):
     exist = [] 
     keys = set(keys)
     popcount = 0
+    c = 0
     for p in path:
         print("------Node---->   " +p)
         for k in keys:
@@ -169,8 +176,10 @@ def main(argv):
                     print(tree[k][0],end="               ")
                 else:
                     print(tree[k][1],end="               ")
-
+        if c + 1 < len(impure_set):
+            print("\n\n--------Split------->If "+impure_set[c][0] + " is "+impure_set[c][1]+" then split on " + impure_set[c+1][2])
         print("\n")
+        c+=1
 
 
 
